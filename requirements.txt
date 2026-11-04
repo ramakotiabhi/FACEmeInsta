@@ -1,2 +1,7 @@
-requests>=2.31.0
+streamlit
+openai
+opencv-python-headless
+pillow
+numpy
 pydantic==2.6.4
+requests>=2.31.0
