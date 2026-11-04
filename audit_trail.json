@@ -1,0 +1,10 @@
+[
+    {
+        "timestamp": 1793086432.7412682,
+        "actor": "Coastal_Guard_Agent",
+        "action": "QUARANTINE_IMPOSTER",
+        "target": "abhiram_fake_scam99",
+        "details": "Identity theft clone! Mimics verified root '@abhiram_official' created earlier.",
+        "hash": "36aab6b871af5687d114cf64c3559803f34425310415dbb331503f3852823daf"
+    }
+]
