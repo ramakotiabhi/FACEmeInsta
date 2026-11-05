@@ -1883,7 +1883,7 @@ with tab5:
     # quick-start questions from different mindsets
     sugg_cols = st.columns(len(SUGGESTIONS))
     clicked_q = None
-    for col, s:
+    for col, s in zip(sugg_cols, SUGGESTIONS):
         if col.button(s, key=f"sugg_{s}", use_container_width=True):
             clicked_q = s
     if st.button("🧹 Clear chat", key="clear_copilot"):
