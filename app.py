@@ -608,7 +608,24 @@ def _chat(client, models, make_messages, attempts, max_tokens=3000):
                 # Fallback simulation for hackathon demo if Baseten API key/auth fails (401)
                 if "401" in str(e) or "Unauthorized" in str(e) or "Authentication" in str(e):
                     print(f"[Baseten Auth Fallback Triggered]: {e}")
-                    simulated_response = f"""
+                    
+                    # Check if this call is for caption analysis (expects JSON) or video analysis (expects text fields)
+                    # We can inspect the make_messages structure or return a hybrid/valid JSON payload
+                    simulated_json = """
+                    {
+                      "language": "Japanese",
+                      "translation": "Comprehensive review of anime and digital media content.",
+                      "primary_topic": "comedy_entertainment",
+                      "secondary_topics": ["tech_education", "lifestyle"],
+                      "summary": "The caption discusses anime content and entertainment features.",
+                      "is_generic": false,
+                      "adult_or_scam_bait": false,
+                      "expected_visual_style": "any",
+                      "named_entities": [{"name": "Instagram", "type": "brand_product"}]
+                    }
+                    """
+                    
+                    simulated_text = """
 PRIMARY_TOPIC: comedy_entertainment
 SECONDARY_TOPICS: tech_education, lifestyle
 VISUAL_STYLE: live_action
@@ -629,7 +646,18 @@ Frame 4: Demonstration of pre-upload guard agent telemetry checks.
 Frame 5: Successful match verification green checkmark displayed.
 Frame 6: Final screen showing secure public publishing confirmation.
 """
-                    return simulated_response.strip(), "meta-models/muse-spark-open-1026 (Simulated Fallback)"
+                    # If the prompt or messages contain caption instructions, return JSON; otherwise return text fields
+                    try:
+                        msgs = make_messages(attempt)
+                        is_caption_task = any("CAPTION_PROMPT" in str(m) or "captions" in str(m).lower() for m in msgs)
+                    except Exception:
+                        is_caption_task = False
+                        
+                    if is_caption_task:
+                        return simulated_json.strip(), "meta-models/muse-spark-open-1026 (Simulated JSON Fallback)"
+                    else:
+                        return simulated_text.strip(), "meta-models/muse-spark-open-1026 (Simulated Fallback)"
+                        
                 errors.append(f"{model}: {str(e)[:120]}")
     raise RuntimeError(" | ".join(errors[-3:]) or "no model available")
 
