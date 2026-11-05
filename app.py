@@ -331,14 +331,27 @@ INSTA_URL = "https://www.instagram.com/accounts/emailsignup/"
 
 
 def get_client():
-    """API key comes from env var or .streamlit/secrets.toml. NEVER hardcode it."""
-    key = os.environ.get("BASETEN_API_KEY")
-    if not key:
-        try:
+    """API key comes from Streamlit secrets or env var with strict cleaning. NEVER hardcode it."""
+    key = None
+    
+    # 1. Prioritize Streamlit secrets first on cloud deployment
+    try:
+        if "BASETEN_API_KEY" in st.secrets:
             key = st.secrets["BASETEN_API_KEY"]
-        except Exception:
-            key = None
-            
+    except Exception:
+        pass
+        
+    # 2. Fallback to OS environment variable if secrets not found
+    if not key:
+        key = os.environ.get("BASETEN_API_KEY")
+        
+    # Clean the key of any accidental whitespace, quotes, or newlines
+    if key:
+        key = str(key).strip().strip('"').strip("'")
+        
+    if not key:
+        st.error("CRITICAL ERROR: BASETEN_API_KEY is missing from Streamlit secrets.")
+        
     return OpenAI(base_url="https://inference.baseten.co/v1", api_key=key, timeout=120)
 
 
