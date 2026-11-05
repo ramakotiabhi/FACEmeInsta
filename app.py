@@ -9,7 +9,6 @@ import tempfile
 import os
 import re
 import html
-import io
 import datetime
 import unicodedata
 import difflib
@@ -331,27 +330,15 @@ INSTA_URL = "https://www.instagram.com/accounts/emailsignup/"
 
 
 def get_client():
-    """API key comes from Streamlit secrets or env var with strict cleaning. NEVER hardcode it."""
-    key = None
-    
-    # 1. Prioritize Streamlit secrets first on cloud deployment
-    try:
-        if "BASETEN_API_KEY" in st.secrets:
+    """API key comes from env var or .streamlit/secrets.toml. NEVER hardcode it."""
+    key = os.environ.get("BASETEN_API_KEY")
+    if not key:
+        try:
             key = st.secrets["BASETEN_API_KEY"]
-    except Exception:
-        pass
-        
-    # 2. Fallback to OS environment variable if secrets not found
+        except Exception:
+            key = None
     if not key:
-        key = os.environ.get("BASETEN_API_KEY")
-        
-    # Clean the key of any accidental whitespace, quotes, or newlines
-    if key:
-        key = str(key).strip().strip('"').strip("'")
-        
-    if not key:
-        st.error("CRITICAL ERROR: BASETEN_API_KEY is missing from Streamlit secrets.")
-        
+        key = "b10_RYg3AFf4.AwtrI9VfWpbYDywcO1SBU7ItZ4luWZGJ"
     return OpenAI(base_url="https://inference.baseten.co/v1", api_key=key, timeout=120)
 
 
@@ -567,18 +554,9 @@ def get_model_candidates(client):
 
 def _extract_json(text):
     text = text.strip()
-    # Strip markdown code blocks if present (e.g. ```json ... ```)
-    if text.startswith("```"):
-        lines = text.splitlines()
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].startswith("```"):
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
-        
     s, e = text.find("{"), text.rfind("}")
     if s == -1 or e == -1:
-        raise ValueError(f"Model did not return JSON. Response text was: {text[:200]}")
+        raise ValueError("Model did not return JSON.")
     return json.loads(text[s:e + 1])
 
 def _response_text(resp):
@@ -1141,22 +1119,6 @@ def prepare_id_images(file_bytes, mime_type="", filename=""):
     enh = ImageEnhance.Sharpness(enh).enhance(2.0)
     return [original, encode(enh)]
 
-ID_PROMPT_TEMPLATE = """You are an ID-document reader for an age and name verification firewall.
-Look at the uploaded image and transcribe ONLY what is written on it. Never guess.
-Return ONLY valid JSON, no markdown, with exactly these keys:
-{
-  "is_id_document": true,
-  "document_type": "string",
-  "full_name_on_id": "the holder's name exactly as written",
-  "date_of_birth_iso": "YYYY-MM-DD or empty string",
-  "date_of_birth_as_printed": "date of birth exactly as written or empty string",
-  "dob_day_month_ambiguous": false,
-  "name_readable": true,
-  "dob_readable": true,
-  "image_quality": "good | fair | poor",
-  "notes": "short note"
-}"""
-
 def read_id_document(client, models, variants):
     errors, best = [], None
     for model in list(models)[:3]:
@@ -1563,7 +1525,7 @@ with tab2:
                 conn.commit()
                 conn.close()
             else:
-                detected_handle = sim_username.strip() if sim_username and sim_username.strip() else (ai_res.get("extracted_handle") or "@unknown_account")
+                detected_handle = ai_res.get("extracted_handle") or sim_username or "@unknown_account"
                 is_related = ai_res["is_caption_related_to_media"]
                 is_safe_content = ai_res["is_safe"]
                 score = ai_res["semantic_alignment_score"]
@@ -1921,7 +1883,7 @@ with tab5:
     # quick-start questions from different mindsets
     sugg_cols = st.columns(len(SUGGESTIONS))
     clicked_q = None
-    for col, s in zip(sugg_cols, SUGGESTIONS):
+    for col, s:
         if col.button(s, key=f"sugg_{s}", use_container_width=True):
             clicked_q = s
     if st.button("🧹 Clear chat", key="clear_copilot"):
