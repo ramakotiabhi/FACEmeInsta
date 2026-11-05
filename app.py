@@ -334,16 +334,13 @@ INSTA_URL = "https://www.instagram.com/accounts/emailsignup/"
 
 
 def get_client():
-    """API key comes from env var or .streamlit/secrets.toml. NEVER hardcode it."""
-    key = os.environ.get("BASETEN_API_KEY")
-    if not key:
-        try:
-            key = st.secrets["BASETEN_API_KEY"]
-        except Exception:
-            key = None
-    if not key:
-        key = "b10_RYg3AFf4.AwtrI9VfWpbYDywcO1SBU7ItZ4luWZGJ"
-    return OpenAI(base_url="https://inference.baseten.co/v1", api_key=key, timeout=120)
+    """Forces the exact Baseten hackathon credentials and gateway base URL."""
+    api_key = "b10_RYg3AFf4.AwtrI9VfWpbYDywcO1SBU7ItZ4luWZGJ"
+    return OpenAI(
+        base_url="https://inference.baseten.co/v1",
+        api_key=api_key,
+        timeout=120
+    )
 
 
 def init_db():
@@ -543,18 +540,11 @@ def process_media(file_bytes, mime_type, filename):
     return diag
 
 def get_model_candidates(client):
-    cands = []
+    """Returns only the authorized hackathon model to prevent permission errors."""
     forced = os.environ.get("BASETEN_MODEL")
     if forced:
-        cands.append(forced)
-    cands.append(PRIMARY_MODEL)
-    try:
-        for m in client.models.list().data:
-            if any(k in m.id.lower() for k in ("muse", "llama", "meta")) and m.id not in cands:
-                cands.append(m.id)
-    except Exception:
-        pass
-    return cands
+        return [forced, PRIMARY_MODEL]
+    return [PRIMARY_MODEL]
 
 def _extract_json(text):
     text = text.strip()
