@@ -9,6 +9,7 @@ import tempfile
 import os
 import re
 import html
+import io
 import datetime
 import unicodedata
 import difflib
@@ -1112,6 +1113,21 @@ def prepare_id_images(file_bytes, mime_type="", filename=""):
         enh = enh.resize((enh.size[0]*2, enh.size[1]*2))
     enh = ImageEnhance.Sharpness(enh).enhance(2.0)
     return [original, encode(enh)]
+ID_PROMPT_TEMPLATE = """You are an ID-document reader for an age and name verification firewall.
+Look at the uploaded image and transcribe ONLY what is written on it. Never guess.
+Return ONLY valid JSON, no markdown, with exactly these keys:
+{
+  "is_id_document": true,
+  "document_type": "string",
+  "full_name_on_id": "the holder's name exactly as written",
+  "date_of_birth_iso": "YYYY-MM-DD or empty string",
+  "date_of_birth_as_printed": "date of birth exactly as written or empty string",
+  "dob_day_month_ambiguous": false,
+  "name_readable": true,
+  "dob_readable": true,
+  "image_quality": "good | fair | poor",
+  "notes": "short note"
+}"""
 
 def read_id_document(client, models, variants):
     errors, best = [], None
