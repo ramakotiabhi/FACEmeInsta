@@ -567,9 +567,18 @@ def get_model_candidates(client):
 
 def _extract_json(text):
     text = text.strip()
+    # Strip markdown code blocks if present (e.g. ```json ... ```)
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        text = "\n".join(lines).strip()
+        
     s, e = text.find("{"), text.rfind("}")
     if s == -1 or e == -1:
-        raise ValueError("Model did not return JSON.")
+        raise ValueError(f"Model did not return JSON. Response text was: {text[:200]}")
     return json.loads(text[s:e + 1])
 
 def _response_text(resp):
