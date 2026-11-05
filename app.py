@@ -601,63 +601,9 @@ def _chat(client, models, make_messages, attempts, max_tokens=3000):
         for attempt in attempts:
             try:
                 resp = client.chat.completions.create(
-                    model=model, messages=make_messages(attempt), temperature=0.0, max_tokens=max_tokens
-                )
+                    model=model, messages=make_messages(attempt), temperature=0.0, max_tokens=max_tokens)
                 return _response_text(resp), model
             except Exception as e:
-                # Fallback simulation for hackathon demo if Baseten API key/auth fails (401)
-                if "401" in str(e) or "Unauthorized" in str(e) or "Authentication" in str(e):
-                    print(f"[Baseten Auth Fallback Triggered]: {e}")
-                    
-                    # Check if this call is for caption analysis (expects JSON) or video analysis (expects text fields)
-                    # We can inspect the make_messages structure or return a hybrid/valid JSON payload
-                    simulated_json = """
-                    {
-                      "language": "Japanese",
-                      "translation": "Comprehensive review of anime and digital media content.",
-                      "primary_topic": "comedy_entertainment",
-                      "secondary_topics": ["tech_education", "lifestyle"],
-                      "summary": "The caption discusses anime content and entertainment features.",
-                      "is_generic": false,
-                      "adult_or_scam_bait": false,
-                      "expected_visual_style": "any",
-                      "named_entities": [{"name": "Instagram", "type": "brand_product"}]
-                    }
-                    """
-                    
-                    simulated_text = """
-PRIMARY_TOPIC: comedy_entertainment
-SECONDARY_TOPICS: tech_education, lifestyle
-VISUAL_STYLE: live_action
-COLOR_STYLE: colour
-CONTENT_RATING: general
-CATEGORY: Verified Social Media Post
-SCENE: The video shows a creator explaining platform security features in a bright studio setting. The caption aligns with the visual content.
-PEOPLE_AND_OBJECTS: 1 person, indoor studio, microphone, laptop
-ON_SCREEN_TEXT: FACEmeInsta Guard Active
-MOOD: professional, informative
-VISIBLE_HANDLE: @ramakotiabhi
-VISIBLE_MUSIC_CREDIT: NONE
-FRAME_NOTES:
-Frame 1: Creator speaking directly to camera with clear audio and stable lighting.
-Frame 2: Screen recording showing verified sovereign badge interface.
-Frame 3: Close-up of secure cryptographic verification prompt.
-Frame 4: Demonstration of pre-upload guard agent telemetry checks.
-Frame 5: Successful match verification green checkmark displayed.
-Frame 6: Final screen showing secure public publishing confirmation.
-"""
-                    # If the prompt or messages contain caption instructions, return JSON; otherwise return text fields
-                    try:
-                        msgs = make_messages(attempt)
-                        is_caption_task = any("CAPTION_PROMPT" in str(m) or "captions" in str(m).lower() for m in msgs)
-                    except Exception:
-                        is_caption_task = False
-                        
-                    if is_caption_task:
-                        return simulated_json.strip(), "meta-models/muse-spark-open-1026 (Simulated JSON Fallback)"
-                    else:
-                        return simulated_text.strip(), "meta-models/muse-spark-open-1026 (Simulated Fallback)"
-                        
                 errors.append(f"{model}: {str(e)[:120]}")
     raise RuntimeError(" | ".join(errors[-3:]) or "no model available")
 
@@ -1617,7 +1563,7 @@ with tab2:
                 conn.commit()
                 conn.close()
             else:
-                detected_handle = ai_res.get("extracted_handle") or sim_username or "@unknown_account"
+                detected_handle = sim_username.strip() if sim_username and sim_username.strip() else (ai_res.get("extracted_handle") or "@unknown_account")
                 is_related = ai_res["is_caption_related_to_media"]
                 is_safe_content = ai_res["is_safe"]
                 score = ai_res["semantic_alignment_score"]
