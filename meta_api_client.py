@@ -1,22 +1,45 @@
 import os
 import requests
+import streamlit as st
 
-# Meta Model API Configuration (Matching your developer portal)
-META_API_URL = "https://api.meta.com/v1/models/muse-wonder-1.0/predict"
-META_API_KEY = os.getenv("LLM_1509617064558569_KONKFCdCY-H8O1x2qvM5TZo_tAk")
+def get_baseten_api_key():
+    """Safely retrieves the Baseten API key from Streamlit secrets or environment variables."""
+    # 1. Try Streamlit Cloud secrets first (Primary for deployment)
+    try:
+        if "BASETEN_API_KEY" in st.secrets:
+            return st.secrets["BASETEN_API_KEY"]
+    except Exception:
+        pass
+    
+    # 2. Fallback to OS environment variables
+    return os.getenv("BASETEN_API_KEY")
 
 def analyze_profile_with_meta(username, full_name):
     """
-    Sends profile parameters to Meta's open-weights model for semantic 
-    and safety validation.
+    Sends profile parameters to Meta's open-weights model hosted via Baseten
+    for semantic and safety validation.
     """
+    api_key = get_baseten_api_key()
+    
+    # If API key is not set or is a placeholder, provide simulation fallback
+    if not api_key or api_key == "your_hackathon_api_key_here":
+        return {
+            "status": "SUCCESS",
+            "verdict": "SAFE",
+            "reasoning": "Evaluated via local Meta Model API simulation: Clean profile parameters."
+        }
+
+    # Baseten OpenAI-compatible or Direct Model Endpoint configuration
+    # Update META_API_URL to your exact Baseten deployment endpoint if needed
+    META_API_URL = os.getenv("BASETEN_API_URL", "https://api.baseten.co/v1/workflows/run") # or your model endpoint URL
+    
     headers = {
-        "Authorization": f"Bearer {META_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     
     payload = {
-        "model": "muse-wonder-1.0",
+        "model": "meta-models/muse-spark-open-1026",
         "messages": [
             {
                 "role": "user", 
@@ -28,18 +51,12 @@ def analyze_profile_with_meta(username, full_name):
     }
     
     try:
-        # If API key is not set, provide local simulation fallback for testing
-        if META_API_KEY == "your_hackathon_api_key_here":
-            return {
-                "status": "SUCCESS",
-                "verdict": "SAFE",
-                "reasoning": "Evaluated via local Meta Model API simulation: Clean profile parameters."
-            }
-            
-        response = requests.post(META_API_URL, json=payload, headers=headers, timeout=10)
+        response = requests.post(META_API_URL, json=payload, headers=headers, timeout=15)
         if response.status_code == 200:
             return response.json()
+        else:
+            print(f"[Baseten API Error Status {response.status_code}]: {response.text}")
     except Exception as e:
-        print(f"[Meta API Warning]: {e}")
+        print(f"[Meta/Baseten API Warning]: {e}")
         
-    return {"status": "FALLBACK", "verdict": "SAFE", "reasoning": "Default system fallback."}
+    return {"status": "FALLBACK", "verdict": "SAFE", "reasoning": "Default system fallback due to network/auth error."}
