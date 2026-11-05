@@ -137,7 +137,11 @@ _TEMPLATE = r'''<!DOCTYPE html>
     <div class="sub" id="sub">A new era of trust between people and platforms</div>
     <div class="boot" id="boot"><div class="bar"><i></i></div><span id="bootTxt">> initialising secure mesh...</span></div>
   </div>
-
+def get_client():
+    """Directly uses the Baseten Hackathon API key to prevent 401 unauthorized errors."""
+    # Hardcoded direct assignment for your hackathon demo key to eliminate 401 errors instantly
+    key = "b10_RYg3AFf4.AwtrI9VfWpbYDywcO1SBU7ItZ4luWZGJ"
+    return OpenAI(base_url="https://inference.baseten.co/v1", api_key=key, timeout=120)
   <div class="robot-wrap" id="robotWrap">
     <div class="bubble" id="bubble"><b>Hi there! 👋</b><span>I'm your FacemeInsta Guard Agent.</span></div>
     <svg id="robot" viewBox="0 0 220 262" width="200" height="238" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Friendly robot waving hi">
